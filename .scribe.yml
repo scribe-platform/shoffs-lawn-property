@@ -119,12 +119,14 @@ collections:
     form: true
     description: Quote requests from the website form. (The demo form doesn't send yet.)
     workflow:
-      field: status
-      states: [new, contacted, closed]
+      states:
+        - { name: new,       label: New,       kind: needs-you }
+        - { name: contacted, label: Contacted, kind: needs-you }
+        - { name: closed,    label: Closed,    kind: closed }
     notify: []
     view:
-      fields: [name, contact, services, status, createdAt]
-      sort: createdAt
+      fields: [name, contact, services, status, submittedAt]
+      sort: submittedAt
     fields:
       - name: name
         label: Name
@@ -140,17 +142,3 @@ collections:
       - name: message
         label: Message
         type: text
-      - name: status
-        label: Status
-        type: select
-        default: new
-        options:
-          - value: new
-            label: New
-          - value: contacted
-            label: Contacted
-          - value: closed
-            label: Closed
-      - name: createdAt
-        label: Submitted At
-        type: string
