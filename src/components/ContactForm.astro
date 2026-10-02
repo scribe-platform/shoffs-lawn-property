@@ -1,0 +1,170 @@
+---
+export interface Props {
+  site: string;
+  collection: string;
+  turnstileSiteKey: string;
+  submissionEndpoint?: string;
+  fields?: string[];
+}
+
+// Reads the admin app's base URL from a public env var rather than
+// hardcoding it, so a Cloudflare Tunnel domain (6.3) can be swapped in per
+// deployment without touching this component. GitHub Actions resolves an
+// unset repo variable (`vars.PUBLIC_SCRIBE_API_URL` in deploy.yml) to an
+// empty string rather than leaving it undefined, so `??` alone doesn't
+// fall back — an empty string must be treated the same as unset.
+const DEFAULT_API_BASE = import.meta.env.PUBLIC_SCRIBE_API_URL || 'https://scribe.weaverdigital.io';
+
+const {
+  site,
+  collection,
+  turnstileSiteKey,
+  submissionEndpoint = `${DEFAULT_API_BASE}/api/submissions`,
+  fields = ['name', 'email', 'message'],
+} = Astro.props;
+
+// A field's HTML control is inferred from its name, since this component
+// only receives a flat list of field names (see contact.astro) — required
+// only for name/email/message, since a schema-driven contact form (phone,
+// service address, etc.) is reasonably optional beyond the essentials.
+const REQUIRED_FIELDS = new Set(['name', 'email', 'message']);
+const TEXTAREA_FIELDS = new Set(['message', 'notes', 'details']);
+
+function inputTypeFor(field: string): string {
+  if (field === 'email') return 'email';
+  if (field === 'phone') return 'tel';
+  return 'text';
+}
+
+function labelFor(field: string): string {
+  return field
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase());
+}
+---
+<form id="scribe-contact-form" data-site={site} data-collection={collection} data-endpoint={submissionEndpoint}>
+  {fields.map((field) => (
+    TEXTAREA_FIELDS.has(field) ? (
+      <label>
+        {labelFor(field)}
+        <textarea name={field} required={REQUIRED_FIELDS.has(field)}></textarea>
+      </label>
+    ) : (
+      <label>
+        {labelFor(field)}
+        <input name={field} type={inputTypeFor(field)} required={REQUIRED_FIELDS.has(field)} />
+      </label>
+    )
+  ))}
+  <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+  <button type="submit">Request my free quote</button>
+  <p id="scribe-contact-status" role="status"></p>
+</form>
+
+<style>
+  #scribe-contact-form { display: flex; flex-direction: column; gap: 14px; max-width: 480px; margin-top: 24px; }
+  #scribe-contact-form label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+  #scribe-contact-form input, #scribe-contact-form textarea {
+    font: inherit;
+    padding: 10px 12px;
+    border: 1px solid var(--border, #dde5df);
+    border-radius: 8px;
+  }
+  #scribe-contact-form button {
+    align-self: flex-start;
+    background: var(--green-700, #2f7a4f);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+</style>
+
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script is:inline>
+  (function () {
+    const form = document.getElementById('scribe-contact-form');
+    if (!form) return;
+
+    const site = form.dataset.site;
+    const collection = form.dataset.collection;
+    const endpoint = form.dataset.endpoint;
+    const statusEl = document.getElementById('scribe-contact-status');
+    const storageKey = `scribe_pending_submission_${site}_${collection}`;
+
+    function setStatus(message) {
+      if (statusEl) statusEl.textContent = message;
+    }
+
+    function readPending() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function savePending(payload) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(payload));
+      } catch {
+        // localStorage unavailable (private browsing, quota) — the status
+        // message below is already honest about the failure; there's
+        // nothing more to persist without it.
+      }
+    }
+
+    function clearPending() {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // see savePending
+      }
+    }
+
+    async function send(payload) {
+      const url = `${endpoint}?site=${encodeURIComponent(site)}&collection=${encodeURIComponent(collection)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`submission failed: ${res.status}`);
+      }
+    }
+
+    async function retryPending() {
+      const pending = readPending();
+      if (!pending) return;
+      try {
+        await send(pending);
+        clearPending();
+        setStatus('Submitted!');
+      } catch {
+        // Still offline/unreachable — leave it pending and try again on
+        // the next page load rather than looping here.
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const payload = Object.fromEntries(data.entries());
+
+      try {
+        await send(payload);
+        setStatus('Submitted!');
+        form.reset();
+      } catch {
+        savePending(payload);
+        setStatus("We couldn't send that yet — it's saved and will retry.");
+      }
+    });
+
+    retryPending();
+  })();
+</script>
