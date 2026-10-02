@@ -8,7 +8,7 @@ const gallery = (await getCollection('gallery')).sort(byOrder);
 const reviews = (await getCollection('reviews')).sort(byOrder);
 
 // Bump on every publish so browsers don't keep an old stylesheet or script.
-const v = '2';
+const v = '3';
 const PHONE = '(717) 466-1674';
 const TEL = 'tel:+17174661674';
 const SMS = 'sms:+17174661674';
@@ -33,7 +33,7 @@ const chipLabels: Record<string, string> = { Landscaping: 'Landscaping & mulch' 
       try {
         var seen = sessionStorage.getItem('shoffs-mowed');
         var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if ((!seen || /[?&]mow\b/.test(location.search)) && !reduce) document.documentElement.classList.add('intro-pending');
+        if ((!seen || /[?&]mow\b/.test(location.search)) && !reduce) document.documentElement.classList.add('intro-pending', 'no-rise');
       } catch (e) {}
       document.documentElement.classList.add('js');
     })();

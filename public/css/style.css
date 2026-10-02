@@ -75,6 +75,8 @@ p { margin: 0 0 1em; }
 @keyframes rise { to { opacity: 1; transform: none; } }
 .intro-done .hero-bg img { animation: settle 2.4s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes settle { from { transform: scale(1.06); } to { transform: none; } }
+/* when the mower plays, the finished page is already sitting under the grass: no second entrance */
+.no-rise .rise, .no-rise .hero-bg img { opacity: 1; transform: none; animation: none; }
 
 /* trust bar */
 .trust { background: var(--charcoal); color: #fff; }
@@ -209,11 +211,11 @@ cite { font-style: normal; font-weight: 700; font-size: 15px; color: var(--muted
 
 /* ---------- mower intro ---------- */
 #mow-intro { display: none; position: fixed; inset: 0; z-index: 9999; cursor: default; }
-.intro-pending #mow-intro { display: block; background: #2a4519; }
+.intro-pending #mow-intro { display: block; background: rgba(78, 128, 48, 0.58); }
 .intro-playing #mow-intro { display: block; }
 .intro-pending body, .intro-playing body { overflow: hidden; }
 #mow-intro canvas { display: block; }
-#mow-intro.mow-out { display: block; opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+#mow-intro.mow-out { display: block; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
 .mow-skip { position: absolute; right: 18px; bottom: 18px; font: 700 13px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 9px 16px; cursor: pointer; backdrop-filter: blur(4px); }
 .mow-skip:hover { background: rgba(0,0,0,.55); }
 
