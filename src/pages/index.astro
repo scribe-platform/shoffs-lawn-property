@@ -1,0 +1,94 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/base';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import {
+  CATALOG_ACTIVE_FIELD,
+  CATALOG_COLLECTION,
+  CATALOG_LABEL,
+  CATALOG_PRICE_FIELD,
+  CATALOG_SORT_FIELD,
+  CATALOG_TITLE_FIELD,
+  SITE_NAME,
+} from '../site-config';
+import { formatPrice } from '../lib/catalog';
+
+let featured: CollectionEntry<any>[] = [];
+if (CATALOG_COLLECTION) {
+  const entries = (await getCollection(CATALOG_COLLECTION as any)) as CollectionEntry<any>[];
+  const visible = CATALOG_ACTIVE_FIELD ? entries.filter((e) => e.data[CATALOG_ACTIVE_FIELD] !== false) : entries;
+  const sorted = CATALOG_SORT_FIELD
+    ? [...visible].sort((a, b) => (a.data[CATALOG_SORT_FIELD] < b.data[CATALOG_SORT_FIELD] ? -1 : 1))
+    : visible;
+  featured = sorted.slice(0, 3);
+}
+---
+<Base title="Home" description={`${SITE_NAME} — managed with Scribe.`}>
+  <section class="hero">
+    <span class="eyebrow">Locally owned &amp; operated</span>
+    <h1>A lawn you'll actually be proud of.</h1>
+    <p class="hero-sub">
+      {SITE_NAME} keeps yards mowed, fed, and looking sharp — so you don't have to think about it.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href={url('/contact')}>Get a Free Quote</a>
+      {CATALOG_COLLECTION && (
+        <a class="btn btn-secondary" href={url(`/${CATALOG_COLLECTION}`)}>Browse {CATALOG_LABEL}</a>
+      )}
+    </div>
+  </section>
+
+  <section class="why-us">
+    <h2>Why homeowners choose us</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>🚜 Reliable weekly service</h3>
+        <p>Same crew, same schedule, every week — no surprises.</p>
+      </div>
+      <div class="card">
+        <h3>🌱 Healthy, green results</h3>
+        <p>Fertilization and weed control tailored to your lawn's needs.</p>
+      </div>
+      <div class="card">
+        <h3>💧 Full-service options</h3>
+        <p>From a simple mow to complete seasonal lawn care, we scale with you.</p>
+      </div>
+    </div>
+  </section>
+
+  {featured.length > 0 && (
+    <section class="teaser">
+      <h2>Popular {CATALOG_LABEL}</h2>
+      <div class="card-grid">
+        {featured.map((entry) => (
+          <a class="card" href={url(`/${CATALOG_COLLECTION}/${entry.id}`)}>
+            <h3>{entry.data[CATALOG_TITLE_FIELD] ?? entry.id}</h3>
+            {CATALOG_PRICE_FIELD && entry.data[CATALOG_PRICE_FIELD] != null && (
+              <p class="price">{formatPrice(entry.data[CATALOG_PRICE_FIELD])} <small>/ month</small></p>
+            )}
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <p class="managed-note">This site is managed with Scribe. Read the <a href={url('/blog')}>blog</a> or <a href={url('/contact')}>get in touch</a>.</p>
+
+  <style>
+    .hero { text-align: center; padding: 32px 0 48px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; font-weight: 700; color: var(--green-700); }
+    .hero h1 { font-size: 2.4rem; margin: 12px 0; color: var(--green-900); }
+    .hero-sub { max-width: 520px; margin: 0 auto 24px; color: var(--ink-soft); }
+    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-block; padding: 12px 24px; border-radius: 999px; font-weight: 700; text-decoration: none; }
+    .btn-primary { background: var(--green-700); color: white; }
+    .btn-secondary { background: white; color: var(--green-700); border: 1px solid var(--green-700); }
+    section.why-us, section.teaser { margin: 48px 0; }
+    section h2 { text-align: center; margin-bottom: 24px; }
+    .card-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card { display: block; border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: white; color: var(--ink); text-decoration: none; }
+    .card h3 { margin-top: 0; }
+    .price { font-weight: 700; color: var(--green-700); }
+    .managed-note { text-align: center; color: var(--ink-soft); font-size: 0.9rem; margin-top: 48px; }
+  </style>
+</Base>
