@@ -1,0 +1,68 @@
+---
+// Generic catalog detail page — see index.astro in this folder for why this
+// isn't hardcoded to any one customer's collection name.
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { url } from '../../lib/base';
+import {
+  CATALOG_BODY_FIELD,
+  CATALOG_COLLECTION,
+  CATALOG_FIELDS,
+  CATALOG_LABEL,
+  CATALOG_PRICE_FIELD,
+  CATALOG_TITLE_FIELD,
+} from '../../site-config';
+import { formatFieldValue, formatPrice } from '../../lib/catalog';
+
+export async function getStaticPaths() {
+  if (!CATALOG_COLLECTION) return [];
+  const entries = (await getCollection(CATALOG_COLLECTION as any)) as CollectionEntry<any>[];
+  return entries.map((entry) => ({
+    params: { collection: CATALOG_COLLECTION, slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props as { entry: CollectionEntry<any> };
+const { Content } = CATALOG_BODY_FIELD ? await render(entry) : { Content: null };
+
+const secondaryFields = CATALOG_FIELDS.filter(
+  (f) => f.name !== CATALOG_TITLE_FIELD && f.name !== CATALOG_PRICE_FIELD,
+);
+---
+<Base title={entry.data[CATALOG_TITLE_FIELD] ?? entry.id}>
+  <a class="back-link" href={url(`/${CATALOG_COLLECTION}`)}>&larr; Back to {CATALOG_LABEL}</a>
+  <article class="catalog-detail">
+    <h1>{entry.data[CATALOG_TITLE_FIELD] ?? entry.id}</h1>
+    {CATALOG_PRICE_FIELD && entry.data[CATALOG_PRICE_FIELD] != null && (
+      <p class="price">{formatPrice(entry.data[CATALOG_PRICE_FIELD])} <small>/ month</small></p>
+    )}
+    {secondaryFields.map((field) => (
+      entry.data[field.name] != null && (
+        <p class="field"><strong>{field.label}:</strong> {formatFieldValue(entry.data[field.name])}</p>
+      )
+    ))}
+    {Content && (
+      <div class="prose">
+        <Content />
+      </div>
+    )}
+    <a class="btn" href={url(`/contact`)}>Get started</a>
+  </article>
+  <style>
+    .back-link { display: inline-block; margin-bottom: 16px; font-weight: 600; }
+    .catalog-detail .price { font-weight: 700; color: var(--green-700); font-size: 1.2rem; }
+    .catalog-detail .field { color: var(--ink-soft); }
+    .prose { margin: 20px 0; }
+    .btn {
+      display: inline-block;
+      margin-top: 12px;
+      background: var(--green-700);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</Base>
