@@ -150,7 +150,7 @@
     tint.g.fillStyle = tint.g.createPattern(grassTile(dpr), 'repeat');
     if (tint.g.fillStyle.setTransform) tint.g.fillStyle.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
     tint.g.fillRect(0, 0, W, H);
-    var fresh = layer();                   // just-cut stripes, fading out
+    var fresh = layer();                   // grass just mowed: keeps its look, then slowly fades to show the page
 
     // rows sized to the screen; the mower is a bit narrower than a row's height times 1.05
     var target = Math.max(110, Math.min(190, Math.min(W, H) * 0.25));
@@ -217,13 +217,18 @@
       var steps = Math.max(1, Math.ceil((d - lastD) / 5));
       for (var k = 1; k <= steps; k++) {
         var q = poseAt(lastD + (d - lastD) * k / steps);
-        cutPath(tint.g, q); tint.g.fill();
+        // hand the mowed strip over to the fading layer, then take it off the standing grass
+        fresh.g.save();
+        cutPath(fresh.g, q); fresh.g.clip();
+        fresh.g.drawImage(tint.c, 0, 0, W, H);
         fresh.g.fillStyle = STRIPE[q.row % 2];
-        cutPath(fresh.g, q); fresh.g.fill();
+        fresh.g.fillRect(0, 0, W, H);
+        fresh.g.restore();
+        cutPath(tint.g, q); tint.g.fill();
       }
       tint.g.globalCompositeOperation = 'source-over';
       fresh.g.globalCompositeOperation = 'destination-out';
-      fresh.g.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 0.35)) + ')';
+      fresh.g.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 0.75)) + ')';   // slow reveal
       fresh.g.fillRect(0, 0, W, H);
       fresh.g.globalCompositeOperation = 'source-over';
       lastD = d;
@@ -242,7 +247,7 @@
       // once the mower has left, let the last stripes fade, then step aside
       if (d >= total) {
         if (endAt === null) endAt = t;
-        if (t - endAt > 0.6) { finish(false); return false; }
+        if (t - endAt > 1.8) { finish(false); return false; }   // let the last rows fade out
       }
     }
 
