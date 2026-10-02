@@ -1,0 +1,44 @@
+site: shoffs-lawn-property
+turnstileSiteKey: 0x4AAAAAAFHtLCWg1S7IznJp
+contactCollection: inquiries
+collections:
+  - name: posts
+    label: Posts
+    path: content/posts
+    format: yaml-frontmatter
+    view:
+      primary: title
+      sort: date
+    fields:
+      - name: title
+        type: string
+        required: true
+      - name: date
+        type: date
+        required: true
+      - name: heroImage
+        type: image
+      - name: body
+        type: rich-text
+        isBody: true
+  - name: inquiries
+    label: Inquiries
+    path: content/inquiries
+    format: yaml
+    form: true
+    workflow:
+      field: status
+      states:
+        - new
+        - read
+        - archived
+    fields:
+      - name: name
+        type: string
+        required: true
+      - name: email
+        type: string
+        required: true
+      - name: message
+        type: text
+        required: true
