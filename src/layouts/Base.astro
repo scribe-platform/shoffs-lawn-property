@@ -1,0 +1,84 @@
+---
+import { url } from '../lib/base';
+import { CATALOG_COLLECTION, CATALOG_LABEL, SITE_NAME } from '../site-config';
+
+export interface Props {
+  title: string;
+  siteName?: string;
+  description?: string;
+}
+
+const { title, siteName = SITE_NAME, description } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · {siteName}</title>
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body>
+    <header class="site-header">
+      <a href={url('/')} class="site-name">{siteName}</a>
+      <nav>
+        <a href={url('/')}>Home</a>
+        {CATALOG_COLLECTION && <a href={url(`/${CATALOG_COLLECTION}`)}>{CATALOG_LABEL}</a>}
+        <a href={url('/blog')}>Blog</a>
+        <a href={url('/contact')} class="nav-cta">Contact</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>&copy; {new Date().getFullYear()} {siteName}. Built with Scribe.</p>
+    </footer>
+  </body>
+  <style is:global>
+    :root {
+      color-scheme: light;
+      --ink: #1c2b20;
+      --ink-soft: #4d5d51;
+      --paper: #fbfaf6;
+      --green-700: #2f7a4f;
+      --green-900: #16331f;
+      --border: #dde5df;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.55;
+    }
+    a { color: var(--green-700); }
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: white;
+    }
+    .site-name { font-weight: 800; font-size: 1.1rem; color: var(--green-900); text-decoration: none; }
+    .site-header nav { display: flex; gap: 20px; align-items: center; font-weight: 600; }
+    .site-header nav a { text-decoration: none; color: var(--ink); }
+    .nav-cta {
+      background: var(--green-700);
+      color: white !important;
+      padding: 8px 16px;
+      border-radius: 999px;
+    }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 24px; min-height: 60vh; }
+    .site-footer {
+      background: var(--green-900);
+      color: #eaf6ec;
+      padding: 24px;
+      text-align: center;
+      margin-top: 48px;
+    }
+    .site-footer a { color: #bfe3c8; }
+  </style>
+</html>
