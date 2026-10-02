@@ -83,6 +83,37 @@
     return c;
   }
 
+  /* ---------- a faint grass grain inside the green wash (seamless tile, device pixels) ---------- */
+
+  function grassTile(dpr) {
+    var size = Math.round(220 * dpr);
+    var c = document.createElement('canvas');
+    c.width = c.height = size;
+    var g = c.getContext('2d');
+    g.lineCap = 'round';
+    var colors = ['rgba(28,58,14,0.18)', 'rgba(40,78,22,0.15)', 'rgba(150,196,104,0.15)', 'rgba(184,220,140,0.11)'];
+    var n = Math.round(3200 * dpr * dpr);
+    for (var i = 0; i < n; i++) {
+      var x = Math.random() * size, y = Math.random() * size;
+      var a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+      var l = (2.5 + Math.random() * 5) * dpr;
+      var ex = Math.cos(a) * l, ey = Math.sin(a) * l, bend = (Math.random() - 0.5) * 2 * dpr;
+      g.strokeStyle = colors[i % colors.length];
+      g.lineWidth = (0.7 + Math.random() * 0.7) * dpr;
+      // repeat strokes that cross an edge so the tile wraps without seams
+      var xs = [0], ys = [0], m = l + 2;
+      if (x < m) xs.push(size); if (x > size - m) xs.push(-size);
+      if (y < m) ys.push(size); if (y > size - m) ys.push(-size);
+      g.beginPath();
+      for (var xi = 0; xi < xs.length; xi++) for (var yi = 0; yi < ys.length; yi++) {
+        var bx = x + xs[xi], by = y + ys[yi];
+        g.moveTo(bx, by); g.quadraticCurveTo(bx + ex / 2 + bend, by + ey / 2, bx + ex, by + ey);
+      }
+      g.stroke();
+    }
+    return c;
+  }
+
   /* ---------- the intro ---------- */
 
   var running = null;
@@ -116,10 +147,13 @@
 
     var tint = layer();                    // uncut: a flat green wash
     tint.g.fillStyle = TINT; tint.g.fillRect(0, 0, W, H);
+    tint.g.fillStyle = tint.g.createPattern(grassTile(dpr), 'repeat');
+    if (tint.g.fillStyle.setTransform) tint.g.fillStyle.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    tint.g.fillRect(0, 0, W, H);
     var fresh = layer();                   // just-cut stripes, fading out
 
     // rows sized to the screen; the mower is a bit narrower than a row's height times 1.05
-    var target = Math.max(62, Math.min(92, Math.min(W, H) * 0.11));
+    var target = Math.max(110, Math.min(190, Math.min(W, H) * 0.25));
     var rows = Math.max(4, Math.round(H / target));
     var rowH = H / rows;
     var s = rowH * 1.05 / 100;            // px per mower unit
@@ -160,7 +194,7 @@
       g.closePath();
     }
 
-    var duration = Math.max(3.6, Math.min(5, 2.4 + rows * 0.22)); // seconds of mowing
+    var duration = Math.max(4.6, Math.min(6.2, 3.2 + rows * 0.38)); // seconds of mowing
     var speed = total / duration;
     var hold = 0.3;
     var lastD = 0, lastT = null, t0 = null, done = false, raf = 0, endAt = null;
