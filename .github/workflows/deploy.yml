@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Dispatched by `scribe build trigger` (GitHubClient.dispatchWorkflow) so
+  # an editor can force a rebuild without pushing a commit.
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      # A bare github.io project page needs base=/<repo>; a custom domain
+      # (public/CNAME present, written by the admin's provisioning flow
+      # once a domain is verified) needs base=/.
+      - name: Compute Pages base path
+        id: base
+        run: |
+          if [ -f public/CNAME ]; then
+            echo "path=/" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=/${{ github.event.repository.name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `npm run build` runs scripts/generate-config.mjs first via this
+      # package's own "prebuild" hook (see package.json).
+      - name: Build
+        run: npm run build
+        env:
+          PUBLIC_SCRIBE_API_URL: ${{ vars.PUBLIC_SCRIBE_API_URL }}
+          PUBLIC_BASE_PATH: ${{ steps.base.outputs.path }}
+
+      # `enablement: true` lets this step turn on Pages itself via the
+      # job's own GITHUB_TOKEN (which has `pages: write` above) — the org
+      # PAT used at provisioning time may not carry the separate "Pages"
+      # fine-grained permission, so this is the reliable enable path.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
