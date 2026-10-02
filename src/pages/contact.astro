@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import ContactForm from '../components/ContactForm.astro';
+import { CONTACT_COLLECTION, CONTACT_FIELDS, SITE_SLUG, TURNSTILE_SITE_KEY } from '../site-config';
+---
+<Base title="Contact">
+  <h1>Tell us about your lawn</h1>
+  <p>Fill out the form below and we'll follow up to schedule your free quote. No commitment required.</p>
+  <ContactForm
+    site={SITE_SLUG}
+    collection={CONTACT_COLLECTION}
+    turnstileSiteKey={TURNSTILE_SITE_KEY}
+    fields={CONTACT_FIELDS.length > 0 ? CONTACT_FIELDS : undefined}
+  />
+</Base>
