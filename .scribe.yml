@@ -1,44 +1,156 @@
 site: shoffs-lawn-property
+siteName: Shoff's Lawn & Property
 turnstileSiteKey: 0x4AAAAAAFHtLCWg1S7IznJp
 contactCollection: inquiries
+
 collections:
-  - name: posts
-    label: Posts
-    path: content/posts
-    format: yaml-frontmatter
+  - name: services
+    label: Services
+    path: content/services
+    format: yaml
+    description: The four service tabs under "What does your yard need?" on the homepage.
     view:
       primary: title
-      sort: date
+      sort: order
+      fields: [title, order]
     fields:
       - name: title
+        label: Title
         type: string
         required: true
-      - name: date
-        type: date
+      - name: tabLabel
+        label: Tab label (defaults to Title)
+        type: string
+      - name: description
+        label: Description
+        type: text
         required: true
-      - name: heroImage
+      - name: bullets
+        label: Bullet points
+        type: string
+        list: true
+      - name: photo
+        label: Photo (leave empty to show the icon panel)
         type: image
-      - name: body
-        type: rich-text
-        isBody: true
+      - name: photoAlt
+        label: Photo description (alt text)
+        type: string
+      - name: linkText
+        label: Link text
+        type: string
+      - name: linkTo
+        label: Link goes to
+        type: select
+        default: contact
+        options:
+          - value: contact
+            label: Quote form
+          - value: work
+            label: Our work
+      - name: formPick
+        label: Quote form service to tick (when the link goes to the form)
+        type: string
+      - name: order
+        label: Display order
+        type: number
+        default: 0
+
+  - name: gallery
+    label: Gallery
+    path: content/gallery
+    format: yaml
+    description: The photo strip under the before/after on the homepage. Tap a photo to see it full size.
+    view:
+      primary: caption
+      sort: order
+      fields: [image, caption, order]
+    fields:
+      - name: image
+        label: Photo
+        type: image
+        required: true
+      - name: caption
+        label: Caption / alt text
+        type: string
+        required: true
+      - name: order
+        label: Display order
+        type: number
+        default: 0
+
+  - name: reviews
+    label: Reviews
+    path: content/reviews
+    format: yaml
+    description: Customer reviews shown under "What neighbors say".
+    view:
+      primary: author
+      sort: order
+      fields: [author, source, order]
+    fields:
+      - name: quote
+        label: Review text
+        type: text
+        required: true
+      - name: author
+        label: Reviewer name
+        type: string
+        required: true
+      - name: source
+        label: Source
+        type: select
+        default: Google
+        options:
+          - value: Google
+            label: Google
+          - value: Nextdoor
+            label: Nextdoor
+          - value: Facebook
+            label: Facebook
+      - name: order
+        label: Display order
+        type: number
+        default: 0
+
   - name: inquiries
-    label: Inquiries
+    label: Quote Requests
     path: content/inquiries
     format: yaml
     form: true
+    description: Quote requests from the website form. (The demo form doesn't send yet.)
     workflow:
       field: status
-      states:
-        - new
-        - read
-        - archived
+      states: [new, contacted, closed]
+    notify: []
+    view:
+      fields: [name, contact, services, status, createdAt]
+      sort: createdAt
     fields:
       - name: name
+        label: Name
         type: string
         required: true
-      - name: email
+      - name: contact
+        label: Phone or Email
         type: string
         required: true
+      - name: services
+        label: Services wanted
+        type: string
       - name: message
+        label: Message
         type: text
-        required: true
+      - name: status
+        label: Status
+        type: select
+        default: new
+        options:
+          - value: new
+            label: New
+          - value: contacted
+            label: Contacted
+          - value: closed
+            label: Closed
+      - name: createdAt
+        label: Submitted At
+        type: string

@@ -1,94 +1,261 @@
 ---
-import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
 import { url } from '../lib/base';
-import { getCollection, type CollectionEntry } from 'astro:content';
-import {
-  CATALOG_ACTIVE_FIELD,
-  CATALOG_COLLECTION,
-  CATALOG_LABEL,
-  CATALOG_PRICE_FIELD,
-  CATALOG_SORT_FIELD,
-  CATALOG_TITLE_FIELD,
-  SITE_NAME,
-} from '../site-config';
-import { formatPrice } from '../lib/catalog';
 
-let featured: CollectionEntry<any>[] = [];
-if (CATALOG_COLLECTION) {
-  const entries = (await getCollection(CATALOG_COLLECTION as any)) as CollectionEntry<any>[];
-  const visible = CATALOG_ACTIVE_FIELD ? entries.filter((e) => e.data[CATALOG_ACTIVE_FIELD] !== false) : entries;
-  const sorted = CATALOG_SORT_FIELD
-    ? [...visible].sort((a, b) => (a.data[CATALOG_SORT_FIELD] < b.data[CATALOG_SORT_FIELD] ? -1 : 1))
-    : visible;
-  featured = sorted.slice(0, 3);
-}
+const byOrder = (a: any, b: any) => (a.data.order ?? 0) - (b.data.order ?? 0);
+const services = (await getCollection('services')).sort(byOrder);
+const gallery = (await getCollection('gallery')).sort(byOrder);
+const reviews = (await getCollection('reviews')).sort(byOrder);
+
+// Bump on every publish so browsers don't keep an old stylesheet or script.
+const v = '2';
+const PHONE = '(717) 466-1674';
+const TEL = 'tel:+17174661674';
+const SMS = 'sms:+17174661674';
+const EMAIL = 'shoffslawncare@yahoo.com';
+const chips = ['Lawn care', 'Landscaping', 'Fall clean-up', 'Brush clearing', 'Pressure washing', 'Hauling', 'Snow removal', 'Something else'];
+const chipLabels: Record<string, string> = { Landscaping: 'Landscaping & mulch' };
 ---
-<Base title="Home" description={`${SITE_NAME} — managed with Scribe.`}>
-  <section class="hero">
-    <span class="eyebrow">Locally owned &amp; operated</span>
-    <h1>A lawn you'll actually be proud of.</h1>
-    <p class="hero-sub">
-      {SITE_NAME} keeps yards mowed, fed, and looking sharp — so you don't have to think about it.
-    </p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href={url('/contact')}>Get a Free Quote</a>
-      {CATALOG_COLLECTION && (
-        <a class="btn btn-secondary" href={url(`/${CATALOG_COLLECTION}`)}>Browse {CATALOG_LABEL}</a>
-      )}
-    </div>
-  </section>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Demo site: keep out of search results until this becomes the real site -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>Shoff's Lawn &amp; Property | Lawn Care in Ephrata, Denver &amp; Reamstown, PA</title>
+  <meta name="description" content="Family-owned lawn care and property maintenance around Ephrata, Denver and Reamstown, PA. Mowing, mulching, fall clean-ups and brush clearing. Call or text (717) 466-1674.">
+  <link rel="icon" type="image/png" href={url('/images/shoffslawnproperty.icon.png')}>
+  <link rel="apple-touch-icon" href={url('/images/shoffslawnproperty.icon.png')}>
+  <script is:inline>
+    // Cover the page with grass before first paint; js/mower.js takes it from here.
+    (function () {
+      try {
+        var seen = sessionStorage.getItem('shoffs-mowed');
+        var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if ((!seen || /[?&]mow\b/.test(location.search)) && !reduce) document.documentElement.classList.add('intro-pending');
+      } catch (e) {}
+      document.documentElement.classList.add('js');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href={url(`/css/style.css?v=${v}`)}>
+</head>
+<body>
+  <div id="mow-intro"></div>
 
-  <section class="why-us">
-    <h2>Why homeowners choose us</h2>
-    <div class="card-grid">
-      <div class="card">
-        <h3>🚜 Reliable weekly service</h3>
-        <p>Same crew, same schedule, every week — no surprises.</p>
-      </div>
-      <div class="card">
-        <h3>🌱 Healthy, green results</h3>
-        <p>Fertilization and weed control tailored to your lawn's needs.</p>
-      </div>
-      <div class="card">
-        <h3>💧 Full-service options</h3>
-        <p>From a simple mow to complete seasonal lawn care, we scale with you.</p>
-      </div>
+  <header class="site-header" id="top">
+    <div class="wrap header-in">
+      <a href="#top" class="brand" aria-label="Shoff's Lawn & Property, back to top">
+        <img src={url('/images/shoffslawnproperty.logo.png')} alt="Shoff's Lawn & Property" width="1364" height="520">
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="#services">Services</a>
+        <a href="#work">Our work</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="btn btn-red header-call" href={TEL}>Call or text <span>{PHONE}</span></a>
     </div>
-  </section>
+  </header>
 
-  {featured.length > 0 && (
-    <section class="teaser">
-      <h2>Popular {CATALOG_LABEL}</h2>
-      <div class="card-grid">
-        {featured.map((entry) => (
-          <a class="card" href={url(`/${CATALOG_COLLECTION}/${entry.id}`)}>
-            <h3>{entry.data[CATALOG_TITLE_FIELD] ?? entry.id}</h3>
-            {CATALOG_PRICE_FIELD && entry.data[CATALOG_PRICE_FIELD] != null && (
-              <p class="price">{formatPrice(entry.data[CATALOG_PRICE_FIELD])} <small>/ month</small></p>
-            )}
-          </a>
-        ))}
+  <main>
+    <section class="hero">
+      <picture class="hero-bg">
+        <source media="(max-width: 700px)" srcset={url('/uploads/20261002-facebook-cover-striped-lawn.jpg')}>
+        <img src={url('/uploads/20261002-nextdoor-striped-lawn-big-yard.jpg')} alt="A freshly mowed lawn with clean stripes, tall trees and a white fence">
+      </picture>
+      <div class="wrap hero-in">
+        <p class="eyebrow rise">Ephrata · Denver · Reamstown · Stevens</p>
+        <h1 class="rise">Lawn care &amp; property maintenance</h1>
+        <p class="lead rise">A family-owned crew that mows, mulches, cleans up for fall, and clears overgrown brush and slopes by hand where machines can't go.</p>
+        <div class="hero-cta rise">
+          <a class="btn btn-red btn-lg" href={TEL}>Call {PHONE}</a>
+          <a class="btn btn-ghost btn-lg" href={SMS}>Text us</a>
+        </div>
+        <p class="fave rise"><span class="fave-leaf" aria-hidden="true"></span>Nextdoor Neighborhood Favorite 2021, 2022, 2023 &amp; 2024</p>
       </div>
     </section>
-  )}
 
-  <p class="managed-note">This site is managed with Scribe. Read the <a href={url('/blog')}>blog</a> or <a href={url('/contact')}>get in touch</a>.</p>
+    <section class="trust" aria-label="Why Shoff's">
+      <div class="wrap trust-in">
+        <div><strong>Family owned</strong><span>Sean and his crew</span></div>
+        <div><strong>4 years a Neighborhood Favorite</strong><span>Voted by neighbors on Nextdoor</span></div>
+        <div><strong>Cash, military &amp; senior discounts</strong><span>Just ask when you call</span></div>
+        <div><strong>Call or text</strong><span><a href={SMS}>{PHONE}</a></span></div>
+      </div>
+    </section>
 
-  <style>
-    .hero { text-align: center; padding: 32px 0 48px; }
-    .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; font-weight: 700; color: var(--green-700); }
-    .hero h1 { font-size: 2.4rem; margin: 12px 0; color: var(--green-900); }
-    .hero-sub { max-width: 520px; margin: 0 auto 24px; color: var(--ink-soft); }
-    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-    .btn { display: inline-block; padding: 12px 24px; border-radius: 999px; font-weight: 700; text-decoration: none; }
-    .btn-primary { background: var(--green-700); color: white; }
-    .btn-secondary { background: white; color: var(--green-700); border: 1px solid var(--green-700); }
-    section.why-us, section.teaser { margin: 48px 0; }
-    section h2 { text-align: center; margin-bottom: 24px; }
-    .card-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .card { display: block; border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: white; color: var(--ink); text-decoration: none; }
-    .card h3 { margin-top: 0; }
-    .price { font-weight: 700; color: var(--green-700); }
-    .managed-note { text-align: center; color: var(--ink-soft); font-size: 0.9rem; margin-top: 48px; }
-  </style>
-</Base>
+    <section class="services stripes" id="services">
+      <div class="wrap">
+        <p class="eyebrow reveal">What we do</p>
+        <h2 class="reveal">What does your yard need?</h2>
+        <div class="svc reveal">
+          <div class="svc-tabs" role="tablist" aria-label="Services">
+            {services.map((s, i) => (
+              <button role="tab" id={`tab-${s.id}`} aria-controls={`panel-${s.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? undefined : -1}>
+                <span class="n">{String(i + 1).padStart(2, '0')}</span>{s.data.tabLabel || s.data.title}
+              </button>
+            ))}
+          </div>
+
+          {services.map((s, i) => (
+            <div class="svc-panel" role="tabpanel" id={`panel-${s.id}`} aria-labelledby={`tab-${s.id}`} hidden={i !== 0}>
+              {s.data.photo ? (
+                <figure class="svc-photo"><img src={url(s.data.photo)} alt={s.data.photoAlt ?? ''} loading="lazy"></figure>
+              ) : (
+                <div class="svc-photo svc-icons">
+                  <div><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 30h20l6-6h10M14 30v8M24 22l10-10M38 10l4 4M30 30c2 3 2 6 0 9M36 30c2 3 2 6 0 9M42 30c2 3 2 6 0 9"/></svg>Pressure washing</div>
+                  <div><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M4 32V16h22v16M26 22h10l6 6v4H26M4 32h38"/><circle cx="12" cy="35" r="4"/><circle cx="34" cy="35" r="4"/></svg>Hauling &amp; junk removal</div>
+                  <div><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4v40M6 14l36 20M42 14L6 34M19 7l5 4 5-4M19 41l5-4 5 4M5 21l6-2-1-6M43 27l-6 2 1 6M43 21l-6-2 1-6M5 27l6 2-1 6"/></svg>Snow removal</div>
+                  <div><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 44V26M24 26l-8-6M24 30l9-7M24 6c-10 0-14 8-14 13 0 6 6 9 14 9s14-3 14-9c0-5-4-13-14-13z"/></svg>Small tree work</div>
+                </div>
+              )}
+              <div class="svc-copy">
+                <h3>{s.data.title}</h3>
+                <p>{s.data.description}</p>
+                {s.data.bullets && s.data.bullets.length > 0 && (
+                  <ul class="ticks">{s.data.bullets.map((b) => <li>{b}</li>)}</ul>
+                )}
+                {s.data.linkText && (
+                  <a class="text-link" href={s.data.linkTo === 'work' ? '#work' : '#contact'} data-pick={s.data.linkTo === 'work' ? undefined : s.data.formPick}>{s.data.linkText}</a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p class="also reveal"><strong>And more:</strong> cleaning, fence and deck repair. If it's on your property, ask.</p>
+      </div>
+    </section>
+
+    <section class="work" id="work">
+      <div class="wrap work-in">
+        <div class="ba reveal">
+          <div class="ba-frame" data-state="after">
+            <img class="ba-img ba-before" src={url('/uploads/20261002-2026-09-18-slope-before-overgrown.jpg')} alt="Before: a slope covered in dense brush and weed trees" loading="lazy">
+            <img class="ba-img ba-after" src={url('/uploads/20261002-2026-09-18-slope-after-cleared-1.jpg')} alt="After: the same slope cleared down to the ground, with the trees left standing" loading="lazy">
+            <span class="ba-tag" aria-live="polite">After</span>
+          </div>
+          <div class="ba-switch" role="group" aria-label="Show before or after">
+            <button type="button" data-show="before" aria-pressed="false">Before</button>
+            <button type="button" data-show="after" aria-pressed="true">After</button>
+          </div>
+        </div>
+        <div class="work-copy reveal">
+          <p class="eyebrow">Recent job · September 2026</p>
+          <h2>Like night and day</h2>
+          <p>A steep slope buried in brush and weed trees, cleared down to the ground by hand, with the good trees left standing. Tap <em>Before</em> to see where it started.</p>
+          <blockquote>
+            <p>“A big part of which was on a very steep slope that required things being done by hand. They did such an amazing job, the difference is like night and day out there!”</p>
+            <cite>Jennifer V., Google review</cite>
+          </blockquote>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="gallery reveal">
+          {gallery.map((g) => (
+            <button type="button" class="g-item"><img src={url(g.data.image)} alt={g.data.caption} loading="lazy"></button>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="seasons stripes" aria-labelledby="seasons-h">
+      <div class="wrap">
+        <p class="eyebrow reveal">Through the year</p>
+        <h2 id="seasons-h" class="reveal">One call, every season</h2>
+        <div class="season-grid reveal">
+          <article class="season" data-months="2,3,4"><span class="now">Right now</span><h3>Spring</h3><p>Fresh mulch, new plantings, and a maintenance plan set up before mowing season starts.</p></article>
+          <article class="season" data-months="5,6,7"><span class="now">Right now</span><h3>Summer</h3><p>Mowing, trimming the beds, and keeping overgrowth from getting ahead of you.</p></article>
+          <article class="season" data-months="8,9,10"><span class="now">Right now</span><h3>Fall</h3><p>Leaf clean-ups in the beds and lawn, perennials trimmed back, and the last mow of the year.</p></article>
+          <article class="season" data-months="11,0,1"><span class="now">Right now</span><h3>Winter</h3><p>Snow removal, so the driveway and walks are clear when you need them.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="reviews" id="reviews">
+      <div class="wrap">
+        <p class="eyebrow reveal">Reviews</p>
+        <h2 class="reveal">What neighbors say</h2>
+        <div class="review-grid">
+          {reviews.map((r) => (
+            <figure class="review reveal">
+              <blockquote>“{r.data.quote}”</blockquote>
+              <figcaption>{r.data.author} <span>{r.data.source}</span></figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="contact" id="contact">
+      <div class="wrap contact-in">
+        <div class="contact-copy reveal">
+          <p class="eyebrow">Get a quote</p>
+          <h2>Tell us what needs doing</h2>
+          <p>The quickest way is a call or a text. Send a photo of the yard by text and Sean can take a look.</p>
+          <a class="big-phone" href={TEL}>{PHONE}</a>
+          <div class="contact-btns">
+            <a class="btn btn-red" href={TEL}>Call</a>
+            <a class="btn btn-dark" href={SMS}>Text</a>
+          </div>
+          <p class="small">Email: <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+          <p class="small"><strong>Serving</strong> Ephrata, Denver, Reamstown, Stevens and nearby.</p>
+        </div>
+
+        <form class="quote reveal" id="quote-form" novalidate>
+          <fieldset class="chips">
+            <legend>What do you need?</legend>
+            {chips.map((c) => (
+              <label><input type="checkbox" name="svc" value={c}><span>{chipLabels[c] ?? c}</span></label>
+            ))}
+          </fieldset>
+          <div class="field">
+            <label for="q-name">Your name</label>
+            <input id="q-name" name="name" type="text" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="q-contact">Phone or email</label>
+            <input id="q-contact" name="contact" type="text" autocomplete="tel">
+          </div>
+          <div class="field">
+            <label for="q-msg">Anything we should know? <span class="opt">(optional)</span></label>
+            <textarea id="q-msg" name="message" rows="3" placeholder="Your town, the size of the yard, how overgrown it is..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-red btn-block">Send to Sean</button>
+          <p class="form-status" id="quote-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-in">
+      <img src={url('/images/shoffslawnproperty.logo-dark.png')} alt="Shoff's Lawn & Property" class="footer-logo" width="1364" height="520" loading="lazy">
+      <div class="footer-links">
+        <a href={TEL}>{PHONE}</a>
+        <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+        <a href="https://www.facebook.com/shoffslawnandproperty/" target="_blank" rel="noopener">Facebook</a>
+      </div>
+      <button type="button" class="replay" id="replay">Watch the mower again</button>
+    </div>
+    <p class="demo">Demo site prepared for Shoff's Lawn &amp; Property. Not yet the official website.</p>
+  </footer>
+
+  <div class="mobile-bar">
+    <a href={TEL} class="btn btn-red">Call</a>
+    <a href={SMS} class="btn btn-dark">Text</a>
+  </div>
+
+  <dialog class="lightbox" id="lightbox">
+    <img src="" alt="">
+    <button type="button" class="lb-close" aria-label="Close">×</button>
+  </dialog>
+
+  <script is:inline src={url(`/js/mower.js?v=${v}`)}></script>
+  <script is:inline src={url(`/js/main.js?v=${v}`)}></script>
+</body>
+</html>
