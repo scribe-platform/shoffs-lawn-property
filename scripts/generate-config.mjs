@@ -173,6 +173,9 @@ function writeSiteConfig(schema) {
   const slug = schema.site ?? 'local-fixture';
   const siteName = schema.siteName ?? 'This Site';
   const turnstileSiteKey = schema.turnstileSiteKey ?? 'dev-mock-key';
+  // ADR 0001 — read from .scribe.yml so the repo builds the same anywhere.
+  const umamiWebsiteId = schema.umamiWebsiteId ?? null;
+  const umamiScriptUrl = schema.umamiScriptUrl ?? null;
   const contactCollection = schema.contactCollection ?? formCollection?.name ?? 'inquiries';
 
   // Internal/bookkeeping fields on the form collection (workflow status,
@@ -200,6 +203,8 @@ function writeSiteConfig(schema) {
 export const SITE_SLUG = ${JSON.stringify(slug)};
 export const SITE_NAME = ${JSON.stringify(siteName)};
 export const TURNSTILE_SITE_KEY = ${JSON.stringify(turnstileSiteKey)};
+export const UMAMI_WEBSITE_ID = ${JSON.stringify(umamiWebsiteId)};
+export const UMAMI_SCRIPT_URL = ${JSON.stringify(umamiScriptUrl)};
 export const CONTACT_COLLECTION = ${JSON.stringify(contactCollection)};
 export const CONTACT_FIELDS = ${JSON.stringify(contactFields)};
 

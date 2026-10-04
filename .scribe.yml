@@ -3,6 +3,8 @@ siteName: Shoff's Lawn & Property
 turnstileSiteKey: 0x4AAAAAAFHtLCWg1S7IznJp
 contactCollection: inquiries
 
+umamiWebsiteId: ad367f28-a2c3-45fb-8374-22025e795bda
+umamiScriptUrl: https://analytics.weaverdigital.io/script.js
 collections:
   - name: services
     label: Services
