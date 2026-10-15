@@ -7,8 +7,8 @@
   'use strict';
 
   var KEY = 'shoffs-mowed';
-  var TINT = 'rgba(78, 128, 48, 0.58)';          // keep in step with .intro-pending #mow-intro in style.css
-  var STRIPE = ['rgba(168, 205, 120, 0.16)', 'rgba(38, 74, 22, 0.12)']; // fresh-cut light / dark stripes
+  var TINT = 'rgb(66, 116, 40)';                 // keep in step with .intro-pending #mow-intro in style.css
+  var STRIPE = ['rgba(190, 226, 140, 0.34)', 'rgba(30, 62, 16, 0.24)']; // fresh-cut light / dark stripes
   var root = document.documentElement;
   var params = new URLSearchParams(location.search);
   var freezeAt = params.has('mowat') ? parseFloat(params.get('mowat')) : null;
@@ -71,6 +71,11 @@
     g.lineWidth = 4; g.strokeStyle = '#9a171d'; g.stroke(DECK);
     g.restore();
 
+    // side discharge chute, where the clippings fly out
+    g.beginPath(); g.moveTo(-12, 44); g.lineTo(8, 44); g.lineTo(12, 60); g.lineTo(-16, 60); g.closePath();
+    g.fillStyle = CHARCOAL; g.fill();
+    g.beginPath(); g.moveTo(-10, 56); g.lineTo(10, 56); g.lineWidth = 2; g.strokeStyle = '#1d1e21'; g.stroke();
+
     // engine
     g.beginPath(); g.arc(0, 0, 30, 0, Math.PI * 2); g.fillStyle = CHARCOAL; g.fill();
     g.beginPath(); g.arc(0, 0, 19, 0, Math.PI * 2); g.fillStyle = '#3c3f44'; g.fill();
@@ -83,7 +88,7 @@
     return c;
   }
 
-  /* ---------- a faint grass grain inside the green wash (seamless tile, device pixels) ---------- */
+  /* ---------- thick standing grass over the green (seamless tile, device pixels) ---------- */
 
   function grassTile(dpr) {
     var size = Math.round(220 * dpr);
@@ -91,15 +96,15 @@
     c.width = c.height = size;
     var g = c.getContext('2d');
     g.lineCap = 'round';
-    var colors = ['rgba(28,58,14,0.18)', 'rgba(40,78,22,0.15)', 'rgba(150,196,104,0.15)', 'rgba(184,220,140,0.11)'];
-    var n = Math.round(3200 * dpr * dpr);
+    var colors = ['rgba(24,52,12,0.42)', 'rgba(38,80,20,0.38)', 'rgba(120,172,72,0.34)', 'rgba(170,212,118,0.26)', 'rgba(52,98,28,0.4)'];
+    var n = Math.round(6400 * dpr * dpr);
     for (var i = 0; i < n; i++) {
       var x = Math.random() * size, y = Math.random() * size;
       var a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
-      var l = (2.5 + Math.random() * 5) * dpr;
+      var l = (4 + Math.random() * 8) * dpr;
       var ex = Math.cos(a) * l, ey = Math.sin(a) * l, bend = (Math.random() - 0.5) * 2 * dpr;
       g.strokeStyle = colors[i % colors.length];
-      g.lineWidth = (0.7 + Math.random() * 0.7) * dpr;
+      g.lineWidth = (0.8 + Math.random() * 0.9) * dpr;
       // repeat strokes that cross an edge so the tile wraps without seams
       var xs = [0], ys = [0], m = l + 2;
       if (x < m) xs.push(size); if (x > size - m) xs.push(-size);
@@ -150,12 +155,15 @@
     tint.g.fillStyle = tint.g.createPattern(grassTile(dpr), 'repeat');
     if (tint.g.fillStyle.setTransform) tint.g.fillStyle.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
     tint.g.fillRect(0, 0, W, H);
-    var fresh = layer();                   // grass just mowed: keeps its look, then slowly fades to show the page
+    var fresh = layer();                   // grass just mowed: keeps its look, then quickly fades to show the page
 
-    // rows sized to the screen; the mower is a bit narrower than a row's height times 1.05
-    var target = Math.max(110, Math.min(190, Math.min(W, H) * 0.25));
-    var rows = Math.max(4, Math.round(H / target));
-    var rowH = H / rows;
+    // lanes run along the long side of the screen (up and down on a phone), so there are fewer turns.
+    // The path is worked out in a frame where lanes are horizontal; tall screens swap x and y at the end.
+    var tall = H > W * 1.15;
+    var LW = tall ? H : W, LH = tall ? W : H;
+    var target = Math.max(80, Math.min(190, LH * 0.26));
+    var rows = Math.max(3, Math.round(LH / target));
+    var rowH = LH / rows;
     var s = rowH * 1.05 / 100;            // px per mower unit
     var r = rowH / 2;                      // turning radius
     var sprite = makeMower(s * dpr);
@@ -165,12 +173,17 @@
     var segs = [], total = 0;
     for (var i = 0; i < rows; i++) {
       var y = rowH * (i + 0.5), ltr = i % 2 === 0, last = i === rows - 1;
-      var xs = i === 0 ? -front - 4 : (ltr ? -rear : W + rear);
-      var xe = ltr ? W + rear + (last ? tail : 0) : -rear - (last ? tail : 0);
+      var xs = i === 0 ? -front - 4 : (ltr ? -rear : LW + rear);
+      var xe = ltr ? LW + rear + (last ? tail : 0) : -rear - (last ? tail : 0);
       segs.push({ line: true, x0: xs, y: y, x1: xe, len: Math.abs(xe - xs), start: total, row: i }); total += Math.abs(xe - xs);
       if (!last) { segs.push({ line: false, cx: xe, cy: y + r, right: ltr, len: Math.PI * r, start: total, row: i }); total += Math.PI * r; }
     }
+    // swapping x and y mirrors the mower, which is symmetric side to side, so it still looks right
     function poseAt(d) {
+      var p = lanePose(d);
+      return tall ? { x: p.y, y: p.x, a: Math.PI / 2 - p.a, row: p.row } : p;
+    }
+    function lanePose(d) {
       d = Math.max(0, Math.min(total - 0.001, d));
       for (var k = 0; k < segs.length; k++) {
         var sg = segs[k];
@@ -184,19 +197,81 @@
       }
       return { x: 0, y: 0, a: 0, row: rows - 1 };
     }
-    function cutPath(g, p) {
+    // each stamp is the deck's straight core plus a few random tufts past each side, so the edge
+    // left against the standing grass is ragged. The next row's core covers the tufts.
+    function cutShape() {
+      var tufts = [];
+      for (var side = -1; side <= 1; side += 2) {
+        for (var n = 0; n < 2; n++) {
+          var x = 20 + Math.random() * 26, w = 3 + Math.random() * 6;
+          tufts.push([[x - w, side * 50], [x, side * (52 + Math.random() * 7)], [x + w, side * 50]]);
+        }
+      }
+      return tufts;
+    }
+    function cutPath(g, p, tufts) {
       var ca = Math.cos(p.a), sa = Math.sin(p.a);
+      function poly(pts) {
+        pts.forEach(function (q, k) {
+          var x = p.x + (q[0] * ca - q[1] * sa) * s, y = p.y + (q[0] * sa + q[1] * ca) * s;
+          if (k) g.lineTo(x, y); else g.moveTo(x, y);
+        });
+        g.closePath();
+      }
       g.beginPath();
-      [[-42, -52.5], [48, -52.5], [48, 52.5], [-42, 52.5]].forEach(function (q, k) {
-        var x = p.x + (q[0] * ca - q[1] * sa) * s, y = p.y + (q[0] * sa + q[1] * ca) * s;
-        if (k) g.lineTo(x, y); else g.moveTo(x, y);
-      });
-      g.closePath();
+      poly([[-42, -50], [48, -50], [48, 50], [-42, 50]]);
+      tufts.forEach(poly);
     }
 
-    var duration = Math.max(4.6, Math.min(6.2, 3.2 + rows * 0.38)); // seconds of mowing
+    // which side the chute is on (1 = the mower's right): always toward the grass still standing,
+    // so clippings land on uncut grass, not on the page. It flips mid-turn, mostly off screen.
+    function chuteSide(p) {
+      var toUncut = tall ? -Math.sin(p.a) : Math.cos(p.a);
+      return toUncut < 0 ? -1 : 1;
+    }
+
+    // clippings thrown out of the side chute; they fly, slow down and fade
+    var CLIP_COLORS = ['#8fc25a', '#6fa63e', '#a9d672', '#5a8f30', '#c3e391'];
+    var clips = [], clipDebt = 0;
+    function sprayClippings(p, travelled, dt) {
+      clipDebt += travelled / (2.4 * s);           // about one clipping per 2.4 mower units of travel
+      var ca = Math.cos(p.a), sa = Math.sin(p.a);
+      while (clipDebt >= 1) {
+        clipDebt -= 1;
+        var side = chuteSide(p);
+        var lx = -4 + Math.random() * 12, ly = 58 * side;  // chute mouth, in mower units
+        var out = side * (260 + Math.random() * 380) * s / 1.4, back = (Math.random() - 0.65) * 160 * s / 1.4;
+        var spread = (Math.random() - 0.5) * 0.7;
+        var vx = back, vy = out;
+        var rx = vx * Math.cos(spread) - vy * Math.sin(spread), ry = vx * Math.sin(spread) + vy * Math.cos(spread);
+        clips.push({
+          x: p.x + (lx * ca - ly * sa) * s, y: p.y + (lx * sa + ly * ca) * s,
+          vx: rx * ca - ry * sa, vy: rx * sa + ry * ca,
+          a: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 30,
+          len: (2.5 + Math.random() * 4) * s * 1.4, life: 0, max: 0.3 + Math.random() * 0.4,
+          color: CLIP_COLORS[(Math.random() * CLIP_COLORS.length) | 0]
+        });
+      }
+    }
+    function drawClippings(g, dt) {
+      var drag = Math.exp(-dt * 5);
+      g.lineCap = 'round';
+      for (var i = clips.length - 1; i >= 0; i--) {
+        var c = clips[i];
+        c.life += dt;
+        if (c.life >= c.max) { clips.splice(i, 1); continue; }
+        c.x += c.vx * dt; c.y += c.vy * dt; c.vx *= drag; c.vy *= drag; c.a += c.spin * dt;
+        var u = c.life / c.max, dx = Math.cos(c.a) * c.len / 2, dy = Math.sin(c.a) * c.len / 2;
+        g.globalAlpha = u < 0.6 ? 1 : (1 - u) / 0.4;
+        g.strokeStyle = c.color; g.lineWidth = Math.max(1, c.len * 0.32);
+        g.beginPath(); g.moveTo(c.x - dx, c.y - dy); g.lineTo(c.x + dx, c.y + dy); g.stroke();
+      }
+      g.globalAlpha = 1;
+    }
+
+    var duration = Math.max(2.6, Math.min(3.0, 2.3 + rows * 0.15)); // seconds of mowing
     var speed = total / duration;
-    var hold = 0.3;
+    var hold = 0.15;
     var lastD = 0, lastT = null, t0 = null, done = false, raf = 0, endAt = null;
 
     function step(now) {
@@ -216,21 +291,22 @@
       tint.g.fillStyle = '#000';
       var steps = Math.max(1, Math.ceil((d - lastD) / 5));
       for (var k = 1; k <= steps; k++) {
-        var q = poseAt(lastD + (d - lastD) * k / steps);
+        var q = poseAt(lastD + (d - lastD) * k / steps), tufts = cutShape();
         // hand the mowed strip over to the fading layer, then take it off the standing grass
         fresh.g.save();
-        cutPath(fresh.g, q); fresh.g.clip();
+        cutPath(fresh.g, q, tufts); fresh.g.clip();
         fresh.g.drawImage(tint.c, 0, 0, W, H);
         fresh.g.fillStyle = STRIPE[q.row % 2];
         fresh.g.fillRect(0, 0, W, H);
         fresh.g.restore();
-        cutPath(tint.g, q); tint.g.fill();
+        cutPath(tint.g, q, tufts); tint.g.fill();
       }
       tint.g.globalCompositeOperation = 'source-over';
       fresh.g.globalCompositeOperation = 'destination-out';
-      fresh.g.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 0.75)) + ')';   // slow reveal
+      fresh.g.fillStyle = 'rgba(0,0,0,' + (1 - Math.exp(-dt / 0.4)) + ')';    // quick reveal
       fresh.g.fillRect(0, 0, W, H);
       fresh.g.globalCompositeOperation = 'source-over';
+      if (d < total) sprayClippings(p, d - lastD, dt);
       lastD = d;
 
       var g = view.g;
@@ -239,15 +315,19 @@
       g.drawImage(fresh.c, 0, 0);
       g.drawImage(tint.c, 0, 0);
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawClippings(g, dt);
+      // the engine running: a small, fast shake (in mower units)
+      var shake = d < total ? 1 : 0;
       g.save();
-      g.translate(p.x, p.y); g.rotate(p.a); g.scale(s, s);
+      g.translate(p.x, p.y); g.rotate(p.a + shake * (Math.random() - 0.5) * 0.012); g.scale(s, s * chuteSide(p));
+      g.translate(shake * (Math.random() - 0.5) * 1.2, shake * (Math.random() - 0.5) * 1.6);
       g.drawImage(sprite, BOUNDS.x, BOUNDS.y, BOUNDS.w, BOUNDS.h);
       g.restore();
 
       // once the mower has left, let the last stripes fade, then step aside
       if (d >= total) {
         if (endAt === null) endAt = t;
-        if (t - endAt > 1.8) { finish(false); return false; }   // let the last rows fade out
+        if (t - endAt > 0.6) { finish(false); return false; }   // let the last rows fade out
       }
     }
 

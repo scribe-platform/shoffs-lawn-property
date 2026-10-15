@@ -211,7 +211,7 @@ cite { font-style: normal; font-weight: 700; font-size: 15px; color: var(--muted
 
 /* ---------- mower intro ---------- */
 #mow-intro { display: none; position: fixed; inset: 0; z-index: 9999; cursor: default; }
-.intro-pending #mow-intro { display: block; background: rgba(78, 128, 48, 0.58); }
+.intro-pending #mow-intro { display: block; background: rgb(66, 116, 40); }
 .intro-playing #mow-intro { display: block; }
 .intro-pending body, .intro-playing body { overflow: hidden; }
 #mow-intro canvas { display: block; }
