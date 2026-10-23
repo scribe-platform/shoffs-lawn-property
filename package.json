@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
   "description": "Starter site template pushed to new customer repos at provisioning time (Stream 7). Generates its Astro content-collection config from the repo's own .scribe.yml at build time, with zero runtime dependency on the Scribe service.",
   "scripts": {
     "prebuild": "node scripts/generate-config.mjs",
